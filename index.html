@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FoxyStats</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1C1E1F;
+            text-align: center;
+            padding: 80px;
+        }
+        h1 {
+            color: white;
+        }
+        h3 {
+            color: white;
+        }
+        .server {
+            color: white;
+            background-color: #0A0B0B;
+            padding: 15px;
+            margin: 10px;
+            border-radius: 80px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        .server h2 {
+            margin: 0;
+        }
+        .error {
+            color: red;
+        }
+        .filter-container {
+            margin-bottom: 20px;
+        }
+        select {
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <h1>FoxyStats - Minecraft Server Tracker</h1>
+    <h3>Contribute to the server list on Github.</h3>
+
+    <div class="filter-container">
+        <label for="server-filter" style="color:white;">Filter by type:</label>
+        <select id="server-filter">
+            <option value="all">All</option>
+            <option value="global-mini-games">GLOBAL - Mini-games</option>
+            <option value="france">FRANCE - All</option>
+            <option value="france-mini-games">FRANCE - Mini-games</option>
+        </select>
+    </div>
+
+    <div id="servers">
+    </div>
+
+    <script>
+        const servers = [
+            { name: 'Hypixel', ip: 'hypixel.net', types: ['global-mini-games'] },
+            { name: 'GommeHD', ip: 'gommehd.net', types: ['global-mini-games'] },
+            { name: 'Cubecraft', ip: 'play.cubecraft.net', types: ['global-mini-games'] },
+            { name: 'MCC Island', ip: 'play.mccisland.net', types: ['global-mini-games'] },
+            { name: 'Jartex Network', ip: 'jartex.fun', types: ['global-mini-games'] },
+            { name: 'Gamester', ip: 'gamster.org', types: ['global-mini-games'] },
+            { name: 'Minemen', ip: 'eu.minemen.club', types: ['all'] },
+            { name: 'Minehut', ip: 'mc.minehut.com', types: ['all'] },
+            { name: 'Wynncraft', ip: 'play.wynncraft.com', types: ['all'] },
+            { name: 'Complex Gaming', ip: 'hub.mc-complex.com', types: ['all'] },
+            { name: 'Hoplite', ip: 'hoplite.gg', types: ['all'] },
+            { name: '2b2t', ip: '2b2t.org', types: ['all'] },
+            { name: 'Vortex Network', ip: 'mc.vortexnetwork.net', types: ['all'] },
+            { name: 'Pika Network', ip: 'play.pikacraft.eu', types: ['all'] },
+            { name: 'OG-Network', ip: 'og-network.net', types: ['all'] },
+            { name: 'Purple Prison', ip: 'purpleprison.net', types: ['all'] },
+
+
+            { name: 'Paladium', ip: 'mc.paladium-pvp.fr', types: ['france'] },
+            { name: 'Pactify', ip: 'pactify.r53dns.ovh', types: ['france'] },
+            { name: 'PlanetPvP', ip: 'play.planetpvp.fr', types: ['france'] },
+            { name: 'UhcWorld', ip: 'mc.uhcworld.fr', types: ['france'] },
+            { name: 'Evolucraft', ip: 'play.evolucraft.fr', types: ['france'] },
+            { name: 'Storycraft', ip: 'jouer.storycraft.fr', types: ['france'] },
+            { name: 'Hyping', ip: 'play.hyping.fr', types: ['france'] },
+            { name: 'Laylo', ip: 'play.laylo.fr', types: ['france'] },
+            { name: 'PixWorld', ip: 'play.pixworld.fr', types: ['france'] },
+
+            { name: 'Rinaorc', ip: 'play.rinaorc.com', types: ['france', 'france-mini-games'] },
+            { name: 'Wyntale', ip: 'play.wyntale.fr', types: ['france', 'france-mini-games'] },
+            { name: 'Craftok', ip: 'play.craftok.fr', types: ['france', 'france-mini-games'] },
+            { name: 'DeryCube', ip: 'play.derycube.fr', types: ['france', 'france-mini-games'] }
+        ];
+
+        const serverContainer = document.getElementById('servers');
+        const filterSelect = document.getElementById('server-filter');
+
+        function fetchServerStatus(server) {
+            const url = `https://api.minetools.eu/ping/${server.ip}`;
+
+            return fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.players) {
+                        return {
+                            name: server.name,
+                            ip: server.ip,
+                            types: server.types,
+                            online: data.players.online
+                        };
+                    } else {
+                        return {
+                            name: server.name,
+                            ip: server.ip,
+                            types: server.types,
+                            online: -1
+                        };
+                    }
+                })
+                .catch(() => {
+                    return {
+                        name: server.name,
+                        ip: server.ip,
+                        types: server.types,
+                        online: -1
+                    };
+                });
+        }
+
+        function displayServers(servers) {
+            serverContainer.innerHTML = '';
+
+            servers.forEach(server => {
+                const serverDiv = document.createElement('div');
+                serverDiv.className = 'server';
+
+                if (server.online >= 0) {
+                    serverDiv.innerHTML = `<h2>${server.name}</h2><p>Players: ${server.online}</p>`;
+                } else {
+                    serverDiv.innerHTML = `<h2>${server.name}</h2><p class="error">Offline.</p>`;
+                }
+
+                serverContainer.appendChild(serverDiv);
+            });
+        }
+
+        function fetchAndDisplayServers(filterType = 'all') {
+            const promises = servers.map(server => fetchServerStatus(server));
+
+            Promise.all(promises).then(results => {
+                let filteredServers = results;
+
+                if (filterType !== 'all') {
+                    filteredServers = results.filter(server => server.types.includes(filterType));
+                }
+
+                const sortedServers = filteredServers.sort((a, b) => b.online - a.online);
+                displayServers(sortedServers);
+            });
+        }
+
+        filterSelect.addEventListener('change', (event) => {
+            const filterValue = event.target.value;
+            fetchAndDisplayServers(filterValue);
+        });
+
+        fetchAndDisplayServers();
+    </script>
+</body>
+</html>
